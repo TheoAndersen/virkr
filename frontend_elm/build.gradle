@@ -1,0 +1,17 @@
+task build_elm() {
+    exec {
+        workingDir "${projectDir}"
+        executable "elm-make"
+        args "src/Main.elm", "--yes", "--output", "elm.js"
+    }
+}
+
+task elm_app_build() {
+    exec {
+        workingDir "${projectDir}"
+        executable "elm-app"
+        args "start"
+    }
+}
+task start {}
+start.dependsOn(elm_app_build)
