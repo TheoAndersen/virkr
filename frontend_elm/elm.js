@@ -8166,7 +8166,7 @@ var _user$project$Main$view = function (model) {
 					{ctor: '[]'},
 					{
 						ctor: '::',
-						_0: _elm_lang$html$Html$text('Your Elm App is working!'),
+						_0: _elm_lang$html$Html$text('Scaffolded elm app.. yay'),
 						_1: {ctor: '[]'}
 					}),
 				_1: {ctor: '[]'}
