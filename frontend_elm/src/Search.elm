@@ -2,6 +2,8 @@ module Search exposing (..)
 
 import Html exposing (Html, text, ul, li, i, span, a, p, section, div, h1, h2, img)
 import Html.Attributes exposing (src, id, class, type_, placeholder)
+import Http
+import Html.Events exposing (onInput)
 import Json.Decode exposing (decodeString)
 import Json.Decode.Pipeline exposing (decode, required)
 
@@ -23,6 +25,7 @@ search_json_decoder =
         |> required "virksomheder" (Json.Decode.list json_virksomhed_decoder)
 
 
+isOk : Result error value -> Bool
 isOk result =
     case result of
         Ok _ ->
@@ -38,6 +41,7 @@ isOk result =
 
 type alias Model =
     { searchResult : SearchResult
+    , searchText : String
     }
 
 
@@ -56,21 +60,8 @@ type alias SearchResult =
 init : ( Model, Cmd Msg )
 init =
     ( { searchResult =
-            { virksomheder =
-                [ { navn = "Nine A/S"
-                  , adresse = "Kongens Nytorv 18, 1050 København K"
-                  , cvr = "30714024"
-                  }
-                , { navn = "Number Nine ApS"
-                  , adresse = "Løjt Skolegade 18, 6200 Aabenraa"
-                  , cvr = "38537458"
-                  }
-                , { navn = "NINE EYEWEAR ApS"
-                  , adresse = "Rudolfgårdsvej 1, 8260 Viby J"
-                  , cvr = "33262736"
-                  }
-                ]
-            }
+            { virksomheder = [] }
+      , searchText = ""
       }
     , Cmd.none
     )
@@ -82,17 +73,46 @@ init =
 
 type Msg
     = NoOp
+    | SearchFieldUpdated String
+    | SearchedVirkr (Result Http.Error SearchResult)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case msg of
+        SearchFieldUpdated newSearchString ->
+            ( { model | searchText = newSearchString }, searchCvr newSearchString )
+
+        SearchedVirkr result ->
+            case result of
+                Err httpErr ->
+                    ( model, Cmd.none )
+
+                Ok searchResult ->
+                    ( { model | searchResult = searchResult }, Cmd.none )
+
+        NoOp ->
+            ( model, Cmd.none )
+
+
+
+-- HTTP
+
+
+searchCvr : String -> Cmd Msg
+searchCvr searchString =
+    let
+        url =
+            "http://virkr.dk:9092/cvr/searchVirkr/" ++ searchString
+    in
+        Http.send SearchedVirkr (Http.get url search_json_decoder)
 
 
 
 ---- VIEW ----
 
 
+searchField : model -> Html Msg
 searchField model =
     div
         [ id "search"
@@ -103,6 +123,7 @@ searchField model =
                 [ class "input is-medium"
                 , type_ "text"
                 , placeholder "cvr eller navn"
+                , onInput SearchFieldUpdated
                 ]
                 []
             , span [ class "icon is-medium is-right" ]
